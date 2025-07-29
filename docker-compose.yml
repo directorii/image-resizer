@@ -6,41 +6,48 @@ services:
       context: .
       dockerfile: Dockerfile
     image: fastapi-thumbs:latest
+    container_name: image-resizer-backend
     restart: always
     labels:
-      # Traefik auto-discovery
       - "traefik.enable=true"
       - "traefik.http.routers.thumb.rule=Host(`24short.ru`)"
       - "traefik.http.routers.thumb.entrypoints=websecure"
       - "traefik.http.routers.thumb.tls.certresolver=le"
       - "traefik.http.services.thumb.loadbalancer.server.port=8000"
+      - "traefik.http.routers.thumb-http.rule=Host(`24short.ru`)"
+      - "traefik.http.routers.thumb-http.entrypoints=web"
+      - "traefik.http.routers.thumb-http.middlewares=https-redirect"
     networks:
       - web
 
   traefik:
     image: traefik:v3.0
+    container_name: traefik
     restart: always
     command:
-      # static flags replicated from traefik/traefik.yml (can stay here or in file)
-      - --providers.docker
+      - --providers.docker=true
       - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=web
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
       - --certificatesresolvers.le.acme.email=valery@directorii.com
       - --certificatesresolvers.le.acme.storage=/acme/acme.json
       - --certificatesresolvers.le.acme.httpchallenge=true
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+      - --log.level=INFO
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
       - ./acme:/acme
     networks:
       - web
+    labels:
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
 
 networks:
   web:
+    driver: bridge
     external: false
