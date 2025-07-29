@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: fastapi-thumbs:latest
-    container_name: image-resizer-backend
+    container_name: image-resizer-backend-1  # Match the actual container name
     restart: always
     labels:
       - "traefik.enable=true"
@@ -14,6 +14,7 @@ services:
       - "traefik.http.routers.thumb.entrypoints=websecure"
       - "traefik.http.routers.thumb.tls.certresolver=le"
       - "traefik.http.services.thumb.loadbalancer.server.port=8000"
+      # Add HTTP redirect
       - "traefik.http.routers.thumb-http.rule=Host(`24short.ru`)"
       - "traefik.http.routers.thumb-http.entrypoints=web"
       - "traefik.http.routers.thumb-http.middlewares=https-redirect"
@@ -30,11 +31,12 @@ services:
       - --providers.docker.network=web
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
+      # Certificate resolver with exact name "le"
       - --certificatesresolvers.le.acme.email=valery@directorii.com
       - --certificatesresolvers.le.acme.storage=/acme/acme.json
       - --certificatesresolvers.le.acme.httpchallenge=true
       - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
-      - --log.level=INFO
+      - --log.level=DEBUG  # Enable debug for troubleshooting
     ports:
       - "80:80"
       - "443:443"
