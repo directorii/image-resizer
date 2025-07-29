@@ -2,13 +2,15 @@ version: "3.9"
 
 services:
   backend:
-    build: ./app 
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: fastapi-thumbs:latest
     restart: always
     labels:
       # Traefik auto-discovery
       - "traefik.enable=true"
-      - "traefik.http.routers.thumb.rule=Host(`image-resizer.directorii.com`)"
+      - "traefik.http.routers.thumb.rule=Host(`24short.ru`)"
       - "traefik.http.routers.thumb.entrypoints=websecure"
       - "traefik.http.routers.thumb.tls.certresolver=le"
       - "traefik.http.services.thumb.loadbalancer.server.port=8000"
