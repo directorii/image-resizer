@@ -1,0 +1,44 @@
+version: "3.9"
+
+services:
+  backend:
+    build: ./app 
+    image: fastapi-thumbs:latest
+    restart: always
+    labels:
+      # Traefik auto-discovery
+      - "traefik.enable=true"
+      - "traefik.http.routers.thumb.rule=Host(`image-resizer.directorii.com`)"
+      - "traefik.http.routers.thumb.entrypoints=websecure"
+      - "traefik.http.routers.thumb.tls.certresolver=le"
+      - "traefik.http.services.thumb.loadbalancer.server.port=8000"
+    networks:
+      - web
+
+  traefik:
+    image: traefik:v3.0
+    restart: always
+    command:
+      # static flags replicated from traefik/traefik.yml (can stay here or in file)
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=valery@directorii.com
+      - --certificatesresolvers.le.acme.storage=/acme/acme.json
+      - --certificatesresolvers.le.acme.httpchallenge=true
+      - --certificatesresolvers.le.acme.httpchallenge.entrypoint=web
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic.yml:/etc/traefik/dynamic.yml:ro
+      - ./acme:/acme
+    networks:
+      - web
+
+networks:
+  web:
+    external: false
